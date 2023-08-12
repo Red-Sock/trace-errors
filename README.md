@@ -82,3 +82,13 @@ main.doer()
         /Users/alexbukov/Yandex.Disk.localized/redsock/trace-errors/main/main.go:20
 
 ```
+
+
+## Tracing feature is **enabled by default**
+In order to disable it - run go builder with tag rscliErrorTracingDisabled
+
+#### Example
+
+```shell
+  go build -tags rscliErrorTracingDisabled
+```

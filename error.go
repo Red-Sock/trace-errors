@@ -7,14 +7,18 @@ import (
 	"strings"
 )
 
-func New(err string) error {
-	var frames [3]uintptr
-	runtime.Callers(2, frames[:])
+var enableTracing = true
 
-	return Error{
-		msg:   err,
-		trace: frames,
+func New(msg string) error {
+	err := Error{
+		msg: msg,
 	}
+
+	if enableTracing {
+		runtime.Callers(2, err.trace[:])
+	}
+
+	return err
 }
 
 type Error struct {
@@ -32,10 +36,12 @@ func (e Error) Error() string {
 
 	msg += "\n" + e.msg + "\n"
 
-	frames := runtime.CallersFrames(e.trace[:])
-	fr, ok := frames.Next()
-	if ok {
-		msg += "\n" + strings.Join([]string{fr.Function + "()", "        " + fr.File + ":" + strconv.Itoa(fr.Line)}, "\n")
+	if enableTracing {
+		frames := runtime.CallersFrames(e.trace[:])
+		fr, ok := frames.Next()
+		if ok {
+			msg += "\n" + strings.Join([]string{fr.Function + "()", "        " + fr.File + ":" + strconv.Itoa(fr.Line)}, "\n")
+		}
 	}
 
 	return msg
