@@ -2,12 +2,27 @@ package errors
 
 import (
 	"errors"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
 )
 
 var enableTracing = true
+
+var enableTracingFlag = "--enable-rscli-tracing"
+
+func init() {
+	// in case when project was compiled with
+	// "rscliErrorTracingDisabled" build flag,
+	// but we need traces
+	for _, item := range os.Args {
+		if item == enableTracingFlag {
+			enableTracing = true
+			return
+		}
+	}
+}
 
 func New(msg string) error {
 	err := Error{
