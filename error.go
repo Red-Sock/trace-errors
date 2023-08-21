@@ -42,14 +42,12 @@ type Error struct {
 	trace      [3]uintptr
 }
 
-func (e Error) Error() string {
+func (e Error) Error() (msg string) {
+	msg += e.msg + "\n"
 
-	msg := ""
 	if e.innerError != nil {
-		msg = e.innerError.Error()
+		msg += e.innerError.Error()
 	}
-
-	msg += "\n" + e.msg + "\n"
 
 	if enableTracing {
 		frames := runtime.CallersFrames(e.trace[:])
