@@ -1,8 +1,8 @@
-//go:build rscliErrorTracingDisabled
-// +build rscliErrorTracingDisabled
+//go:build rscliErrorTracingEnabled
+// +build rscliErrorTracingEnabled
 
 package errors
 
 func init() {
-	enableTracing = false
+	enableTracing = true
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 )
 
-var enableTracing = true
+var enableTracing = false
 
 var enableTracingFlag = "--enable-rscli-tracing"
 
@@ -43,10 +43,11 @@ type Error struct {
 }
 
 func (e Error) Error() (msg string) {
-	msg += e.msg + "\n"
+	msg += e.msg
 
 	if e.innerError != nil {
-		msg += e.innerError.Error()
+
+		msg += "\n" + e.innerError.Error()
 	}
 
 	if enableTracing {
