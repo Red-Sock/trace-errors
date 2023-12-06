@@ -61,6 +61,10 @@ func (e Error) Error() (msg string) {
 	return msg
 }
 
+func (e Error) Unwrap() error {
+	return e.innerError
+}
+
 func Is(err1, err2 error) bool {
 	return errors.Is(err1, err2)
 }
