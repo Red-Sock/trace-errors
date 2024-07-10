@@ -3,13 +3,14 @@ package errors
 import (
 	"fmt"
 	"runtime"
+	"strings"
 )
 
-func Wrap(innerError error, msg string) error {
+func Wrap(innerError error, msg ...string) error {
 
 	err := Error{
 		innerError: innerError,
-		msg:        msg,
+		msg:        strings.Join(msg, "; "),
 	}
 
 	if enableTracing {
