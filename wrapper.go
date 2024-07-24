@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"runtime"
 	"strings"
+
+	"google.golang.org/grpc/codes"
 )
 
-func Wrap(innerError error, msg ...string) error {
+func Wrap(innerError error, msg ...any) error {
+	str, grpcCode := split(msg)
 
 	err := Error{
 		innerError: innerError,
-		msg:        strings.Join(msg, "; "),
+		msg:        strings.Join(str, "; "),
+		grpcCode:   grpcCode,
 	}
 
 	if enableTracing {
@@ -22,4 +26,17 @@ func Wrap(innerError error, msg ...string) error {
 
 func Wrapf(err error, msg string, args ...interface{}) error {
 	return Wrap(err, fmt.Sprintf(msg, args...))
+}
+
+func split(in []any) (str []string, grpcCode *codes.Code) {
+	for _, m := range in {
+		switch v := m.(type) {
+		case string:
+			str = append(str, v)
+		case codes.Code:
+			grpcCode = &v
+		}
+	}
+
+	return
 }

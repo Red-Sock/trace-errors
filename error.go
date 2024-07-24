@@ -6,6 +6,9 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 var enableTracing = false
@@ -24,9 +27,12 @@ func init() {
 	}
 }
 
-func New(msg string) error {
+func New(msg string, args ...any) error {
+	str, grpcCode := split(args)
+
 	err := Error{
-		msg: msg,
+		msg:      strings.Join(append([]string{msg}, str...), "; "),
+		grpcCode: grpcCode,
 	}
 
 	if enableTracing {
@@ -40,13 +46,14 @@ type Error struct {
 	innerError error
 	msg        string
 	trace      [3]uintptr
+
+	grpcCode *codes.Code
 }
 
 func (e Error) Error() (msg string) {
 	msg += e.msg
 
 	if e.innerError != nil {
-
 		msg += "\n" + e.innerError.Error()
 	}
 
@@ -67,4 +74,17 @@ func (e Error) Unwrap() error {
 
 func Is(err1, err2 error) bool {
 	return errors.Is(err1, err2)
+}
+
+func (e Error) GRPCStatus() *status.Status {
+	if e.grpcCode != nil {
+		return status.New(*e.grpcCode, e.Error())
+	}
+
+	ie, ok := e.innerError.(Error)
+	if ok {
+		return ie.GRPCStatus()
+	}
+
+	return status.New(codes.Internal, e.Error())
 }
