@@ -54,14 +54,17 @@ func (e Error) Error() (msg string) {
 	msg += e.msg
 
 	if e.innerError != nil {
-		msg += "\n" + e.innerError.Error()
+		msg = e.innerError.Error() + "\n" + msg
 	}
 
 	if enableTracing {
 		frames := runtime.CallersFrames(e.trace[:])
 		fr, ok := frames.Next()
 		if ok {
-			msg += "\n" + strings.Join([]string{fr.Function + "()", "        " + fr.File + ":" + strconv.Itoa(fr.Line)}, "\n")
+			traceStr := strings.Join(
+				[]string{fr.Function + "()",
+					"        " + fr.File + ":" + strconv.Itoa(fr.Line)}, "\n")
+			msg = traceStr + "\n" + msg
 		}
 	}
 
