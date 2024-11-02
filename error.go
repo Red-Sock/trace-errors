@@ -42,29 +42,85 @@ func New(msg string, args ...any) error {
 	return err
 }
 
+func NewUserError(msg string, args ...any) error {
+	str, grpcCode := split(args)
+
+	err := Error{
+		msg:         strings.Join(append([]string{msg}, str...), "; "),
+		grpcCode:    grpcCode,
+		isUserError: true,
+	}
+
+	if enableTracing {
+		runtime.Callers(2, err.trace[:])
+	}
+
+	return err
+}
+
 type Error struct {
 	innerError error
-	msg        string
-	trace      [3]uintptr
+
+	isUserError bool
+	msg         string
+	trace       [3]uintptr
 
 	grpcCode *codes.Code
 }
 
 func (e Error) Error() (msg string) {
+	if enableTracing {
+		return e.errorWithTrace()
+	}
+
+	return e.error()
+}
+
+func (e Error) UserError() string {
+	if e.isUserError {
+		return e.msg
+	}
+	var cE Error
+	if errors.As(e.innerError, &cE) {
+		return cE.UserError()
+	}
+
+	return e.error()
+}
+
+func (e Error) errorWithTrace() (msg string) {
 	msg += e.msg
 
 	if e.innerError != nil {
-		msg = e.innerError.Error() + "\n" + msg
+		var cE Error
+		if errors.As(e.innerError, &cE) {
+			msg = cE.errorWithTrace() + "\n" + msg
+		} else {
+			msg = e.innerError.Error()
+		}
 	}
 
-	if enableTracing {
-		frames := runtime.CallersFrames(e.trace[:])
-		fr, ok := frames.Next()
-		if ok {
-			traceStr := strings.Join(
-				[]string{fr.Function + "()",
-					"        " + fr.File + ":" + strconv.Itoa(fr.Line)}, "\n")
-			msg = traceStr + "\n" + msg
+	frames := runtime.CallersFrames(e.trace[:])
+	fr, ok := frames.Next()
+	if ok {
+		traceStr := strings.Join(
+			[]string{fr.Function + "()",
+				"        " + fr.File + ":" + strconv.Itoa(fr.Line)}, "\n")
+		msg = traceStr + "\n" + msg
+	}
+
+	return msg
+}
+
+func (e Error) error() (msg string) {
+	msg += e.msg
+
+	if e.innerError != nil {
+		var cE Error
+		if errors.As(e.innerError, &cE) {
+			msg = cE.error() + "\n" + msg
+		} else {
+			msg = e.innerError.Error()
 		}
 	}
 
@@ -75,19 +131,28 @@ func (e Error) Unwrap() error {
 	return e.innerError
 }
 
-func Is(err1, err2 error) bool {
-	return errors.Is(err1, err2)
-}
-
 func (e Error) GRPCStatus() *status.Status {
 	if e.grpcCode != nil {
 		return status.New(*e.grpcCode, e.Error())
 	}
 
-	ie, ok := e.innerError.(Error)
+	var ie Error
+	ok := errors.As(e.innerError, &ie)
 	if ok {
 		return ie.GRPCStatus()
 	}
 
-	return status.New(codes.Internal, e.Error())
+	return status.New(codes.Internal, e.UserError())
+}
+
+func Is(err1, err2 error) bool {
+	return errors.Is(err1, err2)
+}
+
+func As(err1, err2 error) bool {
+	return errors.As(err1, err2)
+}
+
+func Join(errs ...error) error {
+	return errors.Join(errs...)
 }
