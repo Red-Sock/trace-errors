@@ -96,7 +96,7 @@ func (e Error) errorWithTrace() (msg string) {
 		if errors.As(e.innerError, &cE) {
 			msg = cE.errorWithTrace() + "\n" + msg
 		} else {
-			msg = e.innerError.Error()
+			msg = e.innerError.Error() + "\n" + msg
 		}
 	}
 
@@ -120,7 +120,7 @@ func (e Error) error() (msg string) {
 		if errors.As(e.innerError, &cE) {
 			msg = cE.error() + "\n" + msg
 		} else {
-			msg = e.innerError.Error() + msg
+			msg = e.innerError.Error() + "\n" + msg
 		}
 	}
 
