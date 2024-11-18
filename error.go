@@ -120,7 +120,7 @@ func (e Error) error() (msg string) {
 		if errors.As(e.innerError, &cE) {
 			msg = cE.error() + "\n" + msg
 		} else {
-			msg = e.innerError.Error()
+			msg = e.innerError.Error() + msg
 		}
 	}
 
